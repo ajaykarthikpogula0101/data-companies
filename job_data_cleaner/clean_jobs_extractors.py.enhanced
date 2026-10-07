@@ -1,0 +1,93 @@
+"""Conservative extractors for non-education fields.
+
+Every function abstains with an empty string when explicit evidence is absent.
+"""
+
+from __future__ import annotations
+
+import re
+
+EMPLOYMENT_PATTERNS = [
+    ("Internship", r"\b(?:internship|intern|praktikum|stagiaire)\b"),
+    ("Contract", r"\b(?:fixed[- ]term|contract(?:or)?|temporary|befristet|freelance)\b"),
+    ("Part-time", r"\b(?:part[- ]time|teilzeit|temps partiel)\b"),
+    ("Full-time", r"\b(?:full[- ]time|vollzeit|temps plein)\b"),
+    ("Apprenticeship", r"\b(?:apprentice(?:ship)?|ausbildung|trainee program)\b"),
+]
+
+SENIORITY_PATTERNS = [
+    ("Executive", r"\b(?:chief|c[etf]o|president|executive)\b"),
+    ("Director", r"\b(?:director|vice president|vp)\b"),
+    ("Manager", r"\b(?:manager|management)\b"),
+    ("Lead", r"\b(?:team lead|tech lead|lead|head of)\b"),
+    ("Senior", r"\b(?:senior|sr\.?|principal|staff)\b"),
+    ("Entry", r"\b(?:junior|jr\.?|entry[- ]level|graduate|trainee|intern)\b"),
+]
+
+SKILL_VOCABULARY = [
+    "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Ruby", "PHP",
+    "SQL", "Excel", "Power BI", "Tableau", "AWS", "Azure", "GCP", "Docker",
+    "Kubernetes", "Git", "Linux", "React", "Angular", "Vue", "Node.js", ".NET",
+    "Spring", "Django", "Flask", "FastAPI", "REST", "GraphQL", "Spark", "Hadoop",
+    "TensorFlow", "PyTorch", "Machine Learning", "Data Analysis", "Project Management",
+    "Agile", "Scrum", "SAP", "Salesforce", "English", "German", "French",
+]
+
+EXPERIENCE_PATTERNS = [
+    re.compile(r"\b(?:minimum|min\.?|at least|mindestens)\s*(\d{1,2})(?:\s*(?:-|–|—|to)\s*(\d{1,2}))?\+?\s*(?:years?|yrs?|jahre[n]?)", re.I),
+    re.compile(r"\b(\d{1,2})\s*(?:-|–|—|to)\s*(\d{1,2})\s*(?:years?|yrs?|jahre[n]?)", re.I),
+    re.compile(r"\b(\d{1,2})\+?\s*(?:years?|yrs?|jahre[n]?)\s+(?:of\s+)?(?:professional\s+|relevant\s+|work\s+|berufs)?experience", re.I),
+    re.compile(r"\b(?:experience|berufserfahrung)\s*(?:of|:)?\s*(\d{1,2})(?:\s*(?:-|–|—|to)\s*(\d{1,2}))?\+?\s*(?:years?|yrs?|jahre[n]?)", re.I),
+]
+
+SALARY_RE = re.compile(
+    r"(?P<currency>USD|EUR|GBP|INR|AUD|CAD|CHF|JPY|CNY|[$€£₹¥])\s*"
+    r"(?P<min>\d[\d,.]*\s*[kKmM]?)"
+    r"(?:\s*(?:-|–|—|to)\s*(?:(?:USD|EUR|GBP|INR|AUD|CAD|CHF|JPY|CNY|[$€£₹¥])\s*)?"
+    r"(?P<max>\d[\d,.]*\s*[kKmM]?))?",
+    re.I,
+)
+
+DEADLINE_RE = re.compile(
+    r"\b(?:application deadline|apply by|closing date|bewerbungsschluss)\s*[:\-]?\s*"
+    r"((?:\d{4}-\d{2}-\d{2})|(?:\d{1,2}[./-]\d{1,2}[./-]\d{2,4})|"
+    r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|"
+    r"Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4})",
+    re.I,
+)
+
+
+def first_match(text: str, patterns: list[tuple[str, str]]) -> str:
+    for value, pattern in patterns:
+        if re.search(pattern, text, re.I):
+            return value
+    return ""
+
+
+def experience(text: str) -> tuple[str, str, str]:
+    for pattern in EXPERIENCE_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            low = int(match.group(1))
+            high_group = match.group(2) if (match.lastindex or 0) >= 2 else None
+            high = int(high_group) if high_group else low
+            if 0 <= low <= high <= 80:
+                display = f"{low}-{high} years" if low != high else f"{low} years"
+                return display, str(low), str(high)
+    return "", "", ""
+
+
+def salary(text: str) -> tuple[str, str, str]:
+    match = SALARY_RE.search(text)
+    if not match:
+        return "", "", ""
+    whole = re.sub(r"\s+", " ", match.group(0)).strip()
+    return whole, match.group("min").strip(), (match.group("max") or "").strip()
+
+
+def skills(text: str) -> str:
+    found = []
+    for skill_name in SKILL_VOCABULARY:
+        if re.search(r"(?<![\w+#.])" + re.escape(skill_name) + r"(?![\w+#.])", text, re.I):
+            found.append(skill_name)
+    return "; ".join(found)

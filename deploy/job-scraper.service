@@ -1,0 +1,33 @@
+# /etc/systemd/system/job-scraper.service
+#
+#   sudo cp job-scraper.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now job-scraper
+#   journalctl -u job-scraper -f
+#
+# Set SHARD_INDEX/SHARD_COUNT per VM in /opt/job_scraper/.env.scraper.
+[Unit]
+Description=job_scraper (Camoufox) shard runner
+After=network-online.target systemd-resolved.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scraper
+Group=scraper
+WorkingDirectory=/opt/job_scraper
+EnvironmentFile=/opt/job_scraper/.env.scraper
+ExecStart=/opt/job_scraper/run_shard.sh
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=120
+KillSignal=SIGINT
+LimitNOFILE=65535
+# Firefox needs a writable tmp and its own private one is fine.
+PrivateTmp=yes
+NoNewPrivileges=yes
+StandardOutput=append:/opt/job_scraper/logs/service.out.log
+StandardError=append:/opt/job_scraper/logs/service.err.log
+
+[Install]
+WantedBy=multi-user.target
