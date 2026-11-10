@@ -38,6 +38,7 @@ from job_scraper.company import process_company_details  # noqa: E402
 from job_scraper.session import ScrapeSession  # noqa: E402
 from job_scraper.fields import now_iso, clean_text  # noqa: E402
 from job_scraper.clean_html import html_to_plain_text  # noqa: E402
+from job_scraper.ascii_clean import ascii_clean  # noqa: E402
 from job_scraper.detect_language import detect_language  # noqa: E402
 from job_scraper.fields import extract_labeled_fields, experience_year_range  # noqa: E402
 from job_scraper.pipeline import CsvWriter  # noqa: E402
@@ -182,6 +183,7 @@ def _job_row(name, source_url, id_global, tempid, duns, web_domain, details,
              job, status, source, scraped_at):
     raw = job.get("job_description", "")
     clean = clean_text(html_to_plain_text(raw), max_len=0)
+    clean_ascii = ascii_clean(clean)
     labeled = extract_labeled_fields(clean)
     experience_text = job.get("years_of_experience", "") or \
         labeled.get("years_of_experience", "")
@@ -218,8 +220,8 @@ def _job_row(name, source_url, id_global, tempid, duns, web_domain, details,
         "employment_type": job.get("employment_type", ""),
         "skills": job.get("skills", ""),
         "description_language": detect_language(clean),
-        "job_description": clean,
-        "job_description_clean": clean,
+        "job_description": clean_ascii,
+        "job_description_clean": clean_ascii,
         "job_url": job.get("job_url", ""),
         "salary_disclosed": bool(job.get("salary") or job.get("min_salary")
                                  or job.get("max_salary")),

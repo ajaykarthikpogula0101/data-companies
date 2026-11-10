@@ -34,6 +34,8 @@ if os.environ.get("JOB_SCRAPER_DISABLE_RENDER", "") == "1":
     browser_fetch._BROWSER_UNAVAILABLE_REASON[:] = [
         "disabled by JOB_SCRAPER_DISABLE_RENDER=1"]
 
+from job_scraper.ascii_clean import ascii_clean  # noqa: E402
+
 from job_scraper.config import (  # noqa: E402
     DEFAULT_WORKERS, JOB_DETAIL_TIMEOUT, OUTPUT_COLUMNS,
 )
@@ -97,6 +99,7 @@ def _delivery_row(row, details, job, seniority, out_title, out_desc,
         job.get("education_qualification", ""))
     raw_desc = clean_text(html_to_plain_text(
         job.get("job_description", "")), max_len=0)
+    raw_desc_ascii = ascii_clean(raw_desc)
     labeled = extract_labeled_fields(raw_desc)
     experience_text = job.get("years_of_experience", "") or \
         labeled.get("years_of_experience", "")
@@ -118,7 +121,7 @@ def _delivery_row(row, details, job, seniority, out_title, out_desc,
         "Seniority Level1": seniority,
         "Employment Type": employment_type(job.get("employment_type")),
         "Skills": out_skills or "",
-        "Job description": out_desc or "",
+        "Job description": ascii_clean(out_desc) or "",
         "Country": location_country(loc),
         "Job Status": job.get("job_status", "Active") or "Active",
         "Salary_USD": sal_text,
@@ -163,8 +166,8 @@ def _delivery_row(row, details, job, seniority, out_title, out_desc,
         "employment_type": job.get("employment_type", ""),
         "skills": job.get("skills", ""),
         "description_language": detect_language(raw_desc),
-        "job_description": raw_desc,
-        "job_description_clean": raw_desc,
+        "job_description": raw_desc_ascii,
+        "job_description_clean": raw_desc_ascii,
         "job_url": job.get("job_url", ""),
         "salary_disclosed": bool(job.get("salary") or job.get("min_salary")
                                  or job.get("max_salary")),
