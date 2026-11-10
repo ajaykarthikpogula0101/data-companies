@@ -12,6 +12,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 playwright install chromium
+python -m camoufox fetch
 
 python run_new_pages.py --input input.xlsx --output hiring_10Nov_CVD_delivery.csv --workers 25 --no-resume
 ```

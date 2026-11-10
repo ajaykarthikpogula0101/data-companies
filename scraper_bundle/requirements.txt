@@ -5,6 +5,9 @@ pandas>=2.0
 langdetect>=1.0.9
 python-dotenv>=1.0
 playwright>=1.45
+# Browser rendering (JS-heavy career sites).  Part of browser_fetch's preferred
+# binding; also run `python -m camoufox fetch` after install.
+camoufox[geoip]
 # Optional, but recommended: lets netcache.py fall back to public resolvers
 # (1.1.1.1 / 8.8.8.8 / 9.9.9.9) when the system resolver keeps failing.
 dnspython>=2.4
